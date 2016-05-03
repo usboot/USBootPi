@@ -1,72 +1,63 @@
 # USBootPi v1.2 for H3
 
-一、简介：
+* **Introduction**
 
-USBootPi是使用ARM开发板把TF卡模拟成U盘，并且支持直接挂载ISO文件来模拟USB光驱，主要用于操作系统安装和启动。
+USBootPi uses the ARM single board to emulate the USB flash disk and also emulate the USB cdrom by mounting the ISO file. It can be used for the OS installation and booting.
 
-最新版本下载地址：https://github.com/usboot/USBootPi/releases
+Download the latest version: https://github.com/usboot/USBootPi/releases
 
-二、安装：
+* **Installation**
 
-1、Windows上使用Win32 Disk Imager把镜像文件写到TF卡上。
+1. Write the image file into the MicroSD card by Win32 Disk Imager on the Windows or dd on Linux.
+2. Insert the MicroSD card into the ARM single board and connect PC and OTG on the board with a USB cable. At the moment the board has been started.
+3. At the first time, PC recognizes a USB hard disk (just be the MicroSD card). Create a new partition with the blank space and format it with the "DISK" label(exFAT is recommended) by Disk Management on Windows.
+4. Unmount the USB device after the formatting and unplug the USB cable to complete this installation.
 
-2、把TF卡插到ARM开发板上，使用USB线连接PC和板子上的OTG，此时板子已经启动。
+* **Usage**
 
-3、第一次启动，PC端会识别出一块USB硬盘（就是TF卡），Windows下使用磁盘管理工具把剩余空间创建新分区并格式化（推荐使用exFAT格式）。
+1. After connecting PC and OTG on the board with a USB cable, PC recognizes three USB disks. The disk labeled "BOOT" is used to store the kernel files and the configuration files. The disk labeled "DISK" is used to store the ISO and other image files. The third disk is used to mount the image file on the disk labeled "DISK".
+2. usbootpi.cfg configuration format (MUST be UNIX line endings):
 
-4、分区完毕后，安全卸载USB设备，拔掉USB线即可完成安装。
+  * file=xxx.iso # the image file on the disk labeled "DISK"
+  * cdrom=1 # mount the image file as the ISO file
+  * ro=1 # mount the image file as read-only
+  * disk=/dev/mmcblk0p2 # the device of the disk labeled "DISK" (Available on the disk labeled "BOOT" and the first disk labeled "DISK")
+  * disk_ro=1 # DISK disk set to read-only mode (Available on the disk labeled "BOOT" and the first disk labeled "DISK")
+  * disk2=/dev/mmcblk0p1 # the device of the disk2 (The default value is the device of the disk labeled "BOOT", Available on the disk labeled "BOOT")
+  * disk2_ro=1 # mount the disk2 as read-only (Available on the disk labeled "BOOT")
 
-三、使用：
+3. usbootpi.cfg usage pattern(a little more complicated logic):
 
-1、使用USB线连接PC和板子上的OTG，PC端会识别三个U盘，其中一个是BOOT盘，用来存放内核文件和配置文件。另外一个是DISK盘（安装时新创建的分区），用来存放ISO和各种磁盘镜像文件。还有一个是用于挂载DISK盘上的镜像文件。
+  * For security reasons, the disk labeled "BOOT" is read-only initially. You can use the card reader to modify the files on the disk labeled "BOOT" and can also copy usbootpi.cfg into the disk labeled "DISK" and modify it, but the settings of the begin with "disk2" are invalid. 
+  * If you modify the "disk" setting(such as /dev/sda1, cannot be the disk2), usbootpi.cfg is also available on the second disk labeled "DISK", but the settings of the begin with "disk" are invalid.
+  * The "file", "cdrom", "ro" settings of the following configuration file overwrite the previous configuration files. The settings of the begin with "disk" of the previous configuration file overwrite the following configuration files. If the "disk_ro" setting on the disk labeled "DISK" is 1, you can modify the "disk_ro" setting on the disk labeled "BOOT" to be 0 for removing the read-only mode of the disk labeled "DISK".
 
-2、usbootpi.cfg配置格式说明（注意必须是UNIX换行）：
+4. Copy the image files into the disk labeled "DISK" and then modify usbootpi.cfg on the disk labeled "DISK" to specify the mounting image file(NEED unmount USB devices safely).
+5. Insert the PC to be installed OS and power on the PC. You can select the emulated USB flash drive or cdrom as the booting device.
+6. The disk labeled "DISK" can also be made as the bootable USB flash disk. You can also use the USB flash disk inserted on the board as the disk labeled "disk". Usually the USB flash disk is faster than the MicroSD card.
 
-file=xxx.iso #指定DISK盘上的镜像文件
+* **Notes**
 
-cdrom=1 #设置按照ISO文件格式挂载
+1. The exFAT filesystem is recommended for the disk labeled "DISK". The NTFS filesystem may cause that the disk labeled "DISK" cannot be mounted as read-write because the $LogFile is not written correctly. The FAT32 filesystem does not support the above 4GB ISO file(such as the Win10 x64 ISO file). If you use it only under Linux, you can also format with ext or other filesystems.
+2. Since it is slower to write the MicroSD card, you need to wait a while after coping the big file into the disk labeled "DISK". 
 
-ro=1 #设置按照只读模式挂载镜像文件
+* **Principle**
 
-disk=/dev/mmcblk0p2 #指定DISK盘所在的设备（此设置只在BOOT盘和第一个DISK盘有效）
+1. USBootPi uses USB Gadget for Mass Storage function in the Linux kernel. However, the original code does not support the large ISO file. Now all issues have been fixed and improved, you can use the Win10 x64 ISO file to install.
+2. Since the USBootPi kernel boot will take some time (I have made some optimization), you insert the USB cable and then wait less 10 seconds, PC can recognize the USB disks.
 
-disk_ro=1 #设置DISK盘为只读模式（此设置只在BOOT盘和第一个DISK盘有效）
+* **History**
 
-disk2=/dev/mmcblk0p1 #指定DISK2盘所在的设备（默认是BOOT盘，此设置只在BOOT盘有效）
+- v1.2 
+  - Used armbian to compile the new u-boot and kernel version
+  - Reduced the size of the kernel image again
+  - The boot speed is about 2 seconds faster than v1.1.
 
-disk2_ro=1 #设置DISK2盘为只读模式（此设置只在BOOT盘有效）
+- v1.1 
+  - Supported exFAT format
+  - Improved configuration file format and usage
+  - Optimize the kernel file size
+  - Set the disk labeled "BOOT" to be read-only initially.
 
-3、usbootpi.cfg使用模式说明（逻辑稍微复杂一点）：
-
-出于安全考虑，BOOT盘初始为只读模式。想要修改配置文件，一是可以使用读卡器对BOOT盘上的文件进行修改，还可以把配置文件复制到DISK盘进行修改。位于DISK盘的配置文件其中disk2开头的参数无效。
-
-通过修改disk参数配置第二个DISK盘（比如U盘设备/dev/sda1，注意这里不是DISK2盘），第二个DISK盘还可以有配置文件，但配置文件中的disk开头的参数都无效。
-
-参数file,cdrom,ro是后面的配置文件覆盖前面的配置文件；而disk开头的参数则是前面的配置文件覆盖后面的配置文件。如果把DISK盘设置为只读，可以通过修改BOOT盘里的配置把DISK盘的只读去掉。
-
-4、把镜像文件复制到DISK盘上，然后修改DISK盘上的usbootpi.cfg文件指定挂载镜像文件名及其相关配置即可（注意要安全卸载USB设备）。
-
-5、插入要安装系统的PC上，选择启动方式，就可以看到模拟的USB光驱或磁盘了。
-
-6、DISK盘也可以做成启动U盘，这样就又多了一种启动方式。还可以使用插入U盘做DISK盘，这样比TF卡的速度能快一些。
-
-
-四、注意事项：
-
-1、DISK盘建议格式化成exFAT格式，因为NTFS格式可能会导致文件系统Log没有写入正确而无法按照读写模式挂载文件镜像，而FAT32格式不能存放大于4GB的ISO文件（比如Win10 x64的ISO文件）。如果只在Linux下使用，还可以格式化成ext等格式。
-
-2、复制镜像文件到DISK盘时，由于TF的写入速度较慢，需要等一会儿再断电才能保证数据都写入到TF卡上了。
-
-五、原理说明：
-
-1、基本原理就是使用Linux内核的USB Gadget的Mass Storage功能。但实际测试中，原有的代码不支持大ISO文件。目前已经对遇到的问题进行了改进，可以使用Win10 x64的ISO文件进行安装。
-
-2、由于系统内核启动需要一点时间（已经做了一些优化），因此插入USB线时，需要等待10秒左右PC可以识别USB设备。
-
-六、版本历史：
-
-v1.2 采用armbian编译环境，更换新版本的U-BOOT和内核；进一步优化内核文件大小，启动速度提升2秒左右。
-
-v1.1 支持exFAT格式；改进配置文件格式和使用方法；进一步优化内核文件大小；BOOT盘初始为只读模式。
-
-v1.0 初始版本，支持NanoPi M1。
+- v1.0 
+  - initial release, support NanoPi M1.
