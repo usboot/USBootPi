@@ -1,4 +1,4 @@
-# USBootPi v1.2 for H3
+# USBootPi v1.3 for H3
 
 * **Introduction**
 
@@ -10,7 +10,7 @@ Download the latest version: https://github.com/usboot/USBootPi/releases
 
 1. Write the image file into the MicroSD card by Win32 Disk Imager on the Windows or dd on Linux.
 2. Insert the MicroSD card into the ARM single board and connect PC and OTG on the board with a USB cable. At the moment the board has been started.
-3. At the first time, PC recognizes a USB hard disk (just be the MicroSD card). Create a new partition with the blank space and format it with the "DISK" label(exFAT is recommended) by Disk Management on Windows.
+3. At the first time, PC recognizes a USB hard disk (just be the MicroSD card). Create a new partition with the blank space and format it with the "DISK" label(exFAT is recommended, the cluster size is 64KB) by Disk Management on Windows.
 4. Unmount the USB device after the formatting and unplug the USB cable to complete this installation.
 
 * **Usage**
@@ -35,6 +35,7 @@ Download the latest version: https://github.com/usboot/USBootPi/releases
 4. Copy the image files into the disk labeled "DISK" and then modify usbootpi.cfg on the disk labeled "DISK" to specify the mounting image file(NEED unmount USB devices safely).
 5. Insert the PC to be installed OS and power on the PC. You can select the emulated USB flash drive or cdrom as the booting device.
 6. The disk labeled "DISK" can also be made as the bootable USB flash disk. You can also use the USB flash disk inserted on the board as the disk labeled "disk". Usually the USB flash disk is faster than the MicroSD card.
+7. RAID0 usage: When the "disk" setting has the multiple devices(e.g., disk=/dev/sda /dev/sdb, available only on the disk labeled "BOOT"), the multiple devices are assambled as one RAID0 device and then the real r/w speeds are improved. But now the maximum r/w speeds of the OTG are 24MB/s reads and 17MB/s writes.
 
 * **Notes**
 
@@ -48,16 +49,19 @@ Download the latest version: https://github.com/usboot/USBootPi/releases
 
 * **History**
 
-- v1.2 
-  - Used armbian to compile the new u-boot and kernel version
-  - Reduced the size of the kernel image again
+- v1.3
+  - Supported RAID0.
+
+- v1.2
+  - Used armbian to compile the new u-boot and kernel version.
+  - Reduced the size of the kernel image again.
   - The boot speed is about 2 seconds faster than v1.1.
 
-- v1.1 
-  - Supported exFAT format
-  - Improved configuration file format and usage
-  - Optimize the kernel file size
+- v1.1
+  - Supported exFAT format.
+  - Improved configuration file format and usage.
+  - Optimize the kernel file size.
   - Set the disk labeled "BOOT" to be read-only initially.
 
-- v1.0 
+- v1.0
   - initial release, support NanoPi M1.
